@@ -114,9 +114,7 @@ class VoronoiPolygons(QgisAlgorithm):
         height = extent.height()
         width = extent.width()
         c = voronoi.Context()
-        pts = []
         ptDict = {}
-        ptNdx = -1
         # Find the minimum and maximum x and y for the input points
         xmin = width
         xmax = 0
@@ -131,9 +129,7 @@ class VoronoiPolygons(QgisAlgorithm):
             point = geom.asPoint()
             x = point.x() - extent.xMinimum()
             y = point.y() - extent.yMinimum()
-            pts.append((x, y))
-            ptNdx += 1
-            ptDict[ptNdx] = inFeat.id()
+            ptDict[(x, y)] = inFeat.id()
             if x < xmin:
                 xmin = x
             if y < ymin:
@@ -149,15 +145,12 @@ class VoronoiPolygons(QgisAlgorithm):
                                          'on a vertical or horizontal line) '
                                          '- cannot make a Voronoi diagram!')
         xyminmax = [xmin, ymin, xmax, ymax]
-        if len(pts) < 3:
+        if len(ptDict) < 3:
             raise QgsProcessingException(
                 self.tr('Input file should contain at least 3 points. Choose '
                         'another file and try again.'))
-        # Eliminate duplicate points
-        uniqueSet = set(pts)
-        ids = [pts.index(item) for item in uniqueSet]
         sl = voronoi.SiteList([voronoi.Site(i[0], i[1], sitenum=j)
-                               for (j, i) in enumerate(uniqueSet)])
+                               for (j, i) in enumerate(ptDict.keys())])
         voronoi.voronoi(sl, c)
         if len(c.polygons) == 0:
             raise QgsProcessingException(
@@ -170,7 +163,8 @@ class VoronoiPolygons(QgisAlgorithm):
         for (site, edges) in list(c.polygons.items()):
             if feedback.isCanceled():
                 break
-            request = QgsFeatureRequest().setFilterFid(ptDict[ids[site]])
+            s = sl[site]
+            request = QgsFeatureRequest().setFilterFid(ptDict[(s.x, s.y)])
             inFeat = next(source.getFeatures(request))
             boundarypoints = self.clip_voronoi(edges, c, width,
                                                height, extent,

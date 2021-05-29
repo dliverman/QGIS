@@ -763,7 +763,6 @@ class SiteList(object):
                 self.__xmax = pt.x
             if pt.y > self.__ymax:
                 self.__ymax = pt.y
-        self.__sites.sort()
 
     def setSiteNumber(self, site):
         site.sitenum = self.__sitenum
@@ -784,13 +783,16 @@ class SiteList(object):
                 return None
 
     def iterator(self):
-        return SiteList.Iterator(self.__sites)
+        return SiteList.Iterator(sorted(self.__sites))
 
     def __iter__(self):
         return SiteList.Iterator(self.__sites)
 
     def __len__(self):
         return len(self.__sites)
+
+    def __getitem__(self, key):
+        return self.__sites[key]
 
     def _getxmin(self):
         return self.__xmin
